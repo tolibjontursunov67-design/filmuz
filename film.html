@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Film.uz | O'zbekcha Kino Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --accent: #e50914; --bg: #05070a; --border: rgba(255, 255, 255, 0.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: #fff; }
+
+        header {
+            display: grid; grid-template-columns: 200px 1fr 250px; align-items: center;
+            padding: 15px 5%; background: #000; position: sticky; top: 0; z-index: 1000;
+            border-bottom: 2px solid var(--accent);
+        }
+        .logo { font-size: 28px; font-weight: 900; color: var(--accent); text-decoration: none; }
+        .search-box input { width: 100%; max-width: 450px; padding: 12px; border-radius: 25px; background: #1a1a1a; border: 1px solid #333; color: #fff; outline: none; display: block; margin: 0 auto; }
+        
+        .auth-zone { text-align: right; }
+        .login-btn { background: var(--accent); color: #fff; padding: 10px 25px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; }
+        .welcome-msg { display: none; color: #fff; font-weight: bold; }
+
+        .wrapper { display: flex; padding: 30px 5%; gap: 30px; }
+        .movies-section { flex: 3; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, 200px); gap: 20px; justify-content: start; }
+
+        .card { width: 200px; background: #111; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); transition: 0.3s; cursor: pointer; }
+        .card:hover { transform: translateY(-8px); border-color: var(--accent); }
+        .img-box { position: relative; width: 100%; height: 280px; background: #222; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .play-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; font-size: 50px; color: #fff; }
+        .card:hover .play-overlay { opacity: 1; }
+        .card h4 { padding: 12px; text-align: center; font-size: 13px; color: #eee; min-height: 55px; line-height: 1.4; }
+
+        .ads-sidebar { flex: 0.8; display: flex; flex-direction: column; gap: 15px; position: sticky; top: 100px; height: fit-content; }
+        .ad-unit { width: 100%; height: 180px; background: #111; border-radius: 12px; border: 1px solid #333; overflow: hidden; }
+        .ad-unit img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+
+        .v-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; align-items: center; justify-content: center; }
+        .v-box { width: 90%; max-width: 900px; aspect-ratio: 16/9; position: relative; border-radius: 15px; border: 2px solid var(--accent); background: #000; }
+        iframe { width: 100%; height: 100%; border-radius: 13px; }
+        .v-close { position: absolute; top: -55px; right: 0; color: #fff; font-size: 45px; cursor: pointer; background: none; border: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="#" class="logo">FILM.UZ</a>
+    <div class="search-box"><input type="text" placeholder="Kino qidirish..." onkeyup="search(this.value)"></div>
+    <div class="auth-zone">
+        <button class="login-btn" id="lBtn" onclick="openLogin()">KIRISH</button>
+        <span id="uName" class="welcome-msg"></span>
+    </div>
+</header>
+
+<div class="wrapper">
+    <main class="movies-section">
+        <div class="grid" id="movieGrid"></div>
+    </main>
+
+    <aside class="ads-sidebar">
+        <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
+        <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
+        <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
+        <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
+    </aside>
+</div>
+
+<div class="v-modal" id="vModal">
+    <div class="v-box">
+        <button class="v-close" onclick="closeYT()">&times;</button>
+        <iframe id="ytFrame" src="" frameborder="0" allowfullscreen></iframe>
+    </div>
+</div>
+
+<script>
+    const movieData = [
+        // YANGI QO'SHILGANLAR
+        {id: "lZ63rUxDegI", title: "Qasoskorlar: Ultron davri - Temir odam vs Hulk"},
+        {id: "JJZDCHBzVN8", title: "O'rgimchak-odam: Uyga yo'l yo'q - Piter Parker jangi"},
+        
+        // OLDINGILAR VA TO'G'RILANGAN NOMLAR
+        {id: "ZUGLQdaRuBw", title: "Qasoskorlar: Intihom - Hal qiluvchi jang"},
+        {id: "3KhxcM6Q5n0", title: "Qasoskorlar - Torning bolg'asi sinovi"},
+        {id: "RhU4MuTdL80", title: "Venom - Riotga qarshi final jangi"},
+        {id: "7kT3i6HdYyw", title: "O'rgimchak-odam: Multiolam - Sakrash sahnasi"},
+        {id: "jcZrgBHRoaw", title: "Dedpul - Ko'prik ustidagi jang"},
+        {id: "_OxbjKnWJEo", title: "Venom 2 - Karnejning dunyoga kelishi"},
+        {id: "8U2frOcCYes", title: "Yangi O'rgimchak-odam 2 - Tayms-skverdagi jang"},
+        {id: "XQ_bcfNU-Ro", title: "Morbius - Metrodagi to'qnashuv"},
+        {id: "wamLb-WTggA", title: "Venom 2 - Qamoqxonadan qochish"},
+        {id: "DgK53jPQrjU", title: "O'rgimchak-odam 3 - Qora kostyum jangi"},
+        {id: "pnaiT8BcMq4", title: "O'rgimchak-odam: Uchala qahramon uchrashuvi"},
+        {id: "QJ3erfn7fCE", title: "Betmen Supermenga qarshi - Adolat tongi"},
+        {id: "N5eutTa9RG8", title: "Qora Pantera - Taxt uchun jang"},
+        {id: "j8DdJHnXc9g", title: "Mo'jizakor Ayol - Jang maydoni"},
+        {id: "d3AJAxXkU94", title: "Adolat Ligasi - Flash va vaqtni to'xtatish"},
+        {id: "dKWs29SKgtk", title: "Akvamen - Suv osti saltanati"},
+        {id: "NoexA3ShP3g", title: "O'rgimchak-odam - Ko'zguli olam"},
+        {id: "whndSVg8JhM", title: "Dedpul va Rosomaxa - Ilk uchrashuv"},
+        {id: "MbCSVnpIzHY", title: "Venom Karnejga qarshi - Final"},
+        {id: "aWdq2RbnXPY", title: "Doktor Strenj - Sehrli janglar"},
+        {id: "LS_vN0GWOTM", title: "Shang-Chi - Avtobusdagi jang"},
+        {id: "bkANCc5qVmY", title: "Abadiylar - Kosmik janglar"},
+        {id: "YVBDF9MeOBU", title: "Tor: Sevgi va Guldurak - Zevs sahnasi"},
+        {id: "E2iPedphU3E", title: "Adolat Ligasi - Supermenning qaytishi"},
+        {id: "OyD4elCwn_4", title: "Qasoskorlar: Cheksizlik jangi - Vakanda"},
+        {id: "qKKcPbYEPw0", title: "O'rgimchak-odam - Final sahnasi"},
+        {id: "r4McZlrVEl4", title: "Temir odam - Ilk parvoz"},
+        {id: "SElaHOXPPMA", title: "Kapitan Amerika: Fuqarolar urushi - Aeroport jangi"},
+        {id: "wH6LEklokxM", title: "Tor: Ragnarok - Guldurak xudosi"},
+        {id: "ZblIORb15ss", title: "Qora beva - Maxfiy vazifa"},
+        {id: "E9N3qOuSrk0", title: "Hulk - Dahshatli mahluq bilan jang"},
+        {id: "HfsJg6UrrWQ", title: "Doktor Strenj - Qora olam"},
+        {id: "9DqXMR3UrDc", title: "Qora Pantera - Yakuniy to'qnashuv"},
+        {id: "tZNtk7bg_fg", title: "Galaktika qo'riqchilari 3 - Yo'lakdagi jang"},
+        {id: "6V-9EgqEzs8", title: "Chumoli-odam va Aris - Oshxonadagi jang"},
+        {id: "ZCWGorF0V0Q", title: "Qasoskorlar - Visionning dunyoga kelishi"},
+        {id: "98rneVsQeKc", title: "Doktor Strenj 2 - Alvasti Vanda"},
+        {id: "slaHhE4b2s8", title: "Tor va Loki - Aka-uka jangi"},
+        {id: "AXB1MUOvajc", title: "Abadiylar - Yer himoyasi"},
+        {id: "MDdLBUkIJEE", title: "Shang-Chi - Ajdarho jangi"},
+        {id: "bUvRe4y5fzg", title: "Venom - Simbiotning kuchi"},
+        {id: "dHgKkpiMj4s", title: "Dedpul 2 - Jaggernaut jangi"},
+        {id: "OTSFt3C2v-Y", title: "Logan - Rosomaxaning so'nggi jangi"},
+        {id: "oKWcBX3vooI", title: "Betmen: Zulmat ritsari - Jokinga qarshi"},
+        {id: "D6Ye9XhkZF8", title: "Supermen: Po'lat odam - Dunyo himoyasi"},
+        {id: "iyTS_M_9qzs", title: "Mo'jizakor Ayol 1984 - Oq uy jangi"},
+        {id: "8J0CTKbg9Dg", title: "Flash - General Zod jangi"},
+        {id: "BZR9u90aLvs", title: "Akvamen - Shohona duel"}
+    ];
+
+    const grid = document.getElementById('movieGrid');
+
+    movieData.forEach((movie) => {
+        grid.innerHTML += `
+            <div class="card" data-title="${movie.title}" onclick="openYT('${movie.id}')">
+                <div class="img-box">
+                    <img src="https://img.youtube.com/vi/${movie.id}/hqdefault.jpg">
+                    <div class="play-overlay"><i class="fas fa-play"></i></div>
+                </div>
+                <h4>${movie.title}</h4>
+            </div>`;
+    });
+
+    function openYT(id) {
+        document.getElementById('ytFrame').src = "https://www.youtube.com/embed/" + id + "?autoplay=1";
+        document.getElementById('vModal').style.display = "flex";
+    }
+    function closeYT() {
+        document.getElementById('vModal').style.display = "none";
+        document.getElementById('ytFrame').src = "";
+    }
+    function search(v) {
+        document.querySelectorAll('.card').forEach(c => {
+            let title = c.getAttribute('data-title').toLowerCase();
+            c.style.display = title.includes(v.toLowerCase()) ? 'block' : 'none';
+        });
+    }
+    window.onclick = function(e) { if(e.target.className === 'v-modal') closeYT(); }
+</script>
+</body>
+</html>
