@@ -43,6 +43,9 @@
         iframe { width: 100%; height: 100%; border-radius: 13px; }
         .v-close { position: absolute; top: -55px; right: 0; color: #fff; font-size: 45px; cursor: pointer; background: none; border: none; }
     </style>
+    <!-- Yandex.RTB -->
+<script>window.yaContextCb=window.yaContextCb||[]</script>
+<script src="https://yandex.ru/ads/system/context.js" async></script>
 </head>
 <body>
 
@@ -54,14 +57,43 @@
         <span id="uName" class="welcome-msg"></span>
     </div>
 </header>
-
+<!-- Yandex.RTB R-A-18980958-1 -->
+<script>
+window.addEventListener("load", () => {
+    const render = (imageId) => {
+        window.yaContextCb.push(() => {
+            Ya.Context.AdvManager.render({
+                "renderTo": imageId,
+                "blockId": "R-A-18980958-1",
+                "type": "inImage"
+            })
+        })
+    }
+    const renderInImage = (images) => {
+        if (!images.length) {
+            return
+        }
+        const image = images.shift()
+        image.id = `yandex_rtb_R-A-18980958-1-${Math.random().toString(16).slice(2)}`
+        if (image.tagName === "IMG" && !image.complete) {
+            image.addEventListener("load", () => {
+                render(image.id)
+            }, { once: true })
+        } else {
+            render(image.id)
+        }
+        renderInImage(images)
+    }
+    renderInImage(Array.from(document.querySelectorAll("img")))
+}, { once: true })
+</script>
 <div class="wrapper">
     <main class="movies-section">
         <div class="grid" id="movieGrid"></div>
     </main>
 
     <aside class="ads-sidebar">
-        <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
+        <div class="ad-unit"><img src=""></div>
         <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
         <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
         <div class="ad-unit"><img src="https://via.placeholder.com/300x180?text=REKLAMA+JOYI"></div>
